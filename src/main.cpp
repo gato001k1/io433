@@ -265,7 +265,12 @@ void monitormode() {
 
 
 void setup() {
-  
+  //prevent StickCP2 to turn off when take the USB cable off
+  pinMode(4,OUTPUT);
+  digitalWrite(4,HIGH);
+  // Sets G36 to FLOATING mode to use G25 as GPIO
+  gpio_pulldown_dis(GPIO_NUM_36);
+  gpio_pullup_dis(GPIO_NUM_36);
   CCInit();
   CCSetRx();
   Serial.begin(1000000);
