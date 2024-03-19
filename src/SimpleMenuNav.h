@@ -4,8 +4,8 @@
 #include <TFT_eSPI.h> 
 
 #define IO433VERSION "v0.2"
-#define BUTTON_UP  35
-#define BUTTON_DOWN  0
+#define BUTTON_UP  39
+#define BUTTON_DOWN  37
 #define LONGCLICK_MS 300
 #define DOUBLECLICK_MS 300
 
