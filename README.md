@@ -111,6 +111,7 @@ Tinker/download, both TI-CC1101 and E07-M1101 versions, from  [tinkercad](https:
 * Install the Espressif 32 platform from the PlatformIO Embedded tab (restart)
 * Clone the repository
 * Change the file ./include/CC1101utils.h and uncomment your CC1101 version(either the TICC1101 or the E07M1101D)
+* U can Change the Frequency of the cc1101 on ./include/CC1101utils. The cc1101 can do: 300-348 MHZ, 387-464MHZ and 779-928MHZ
 * Connect USB-C cable to TTGO
 * Build and upload
 
