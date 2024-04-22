@@ -1,12 +1,12 @@
 #include <ELECHOUSE_CC1101_SRC_DRV.h>
 
 //#define TICC1101
-//#define E07M1101D
+#define E07M1101D
 
 #ifdef E07M1101D
  #define CCGDO0 25
- #define CCGDO2 27
- #define CCSCK 2
+ #define CCGDO2 -1
+ #define CCSCK 0
  #define CCMISO 33
  #define CCMOSI 32
  #define CCCSN 26
