@@ -91,7 +91,7 @@ The full material is listed bellow:
 ![IO433 3D case with battery](docs/parts-assembly.jpg)
 ![IO433 3D case with battery](docs/parts-assembly2.jpg)
 ![IO433 3D case with battery](docs/parts-case-white.jpg)
-
+![IO433 M5stickC+2](docs/tGOFaofI.png)
 ### 3D case
 
 NO PCB version:
