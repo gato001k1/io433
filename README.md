@@ -91,7 +91,7 @@ The full material is listed bellow:
 ![IO433 3D case with battery](docs/parts-assembly.jpg)
 ![IO433 3D case with battery](docs/parts-assembly2.jpg)
 ![IO433 3D case with battery](docs/parts-case-white.jpg)
-
+![IO433 M5stickC+2](docs/tGOFaofI.png)
 ### 3D case
 
 NO PCB version:
@@ -111,6 +111,7 @@ Tinker/download, both TI-CC1101 and E07-M1101 versions, from  [tinkercad](https:
 * Install the Espressif 32 platform from the PlatformIO Embedded tab (restart)
 * Clone the repository
 * Change the file ./include/CC1101utils.h and uncomment your CC1101 version(either the TICC1101 or the E07M1101D)
+* U can Change the Frequency of the cc1101 on ./include/CC1101utils. The cc1101 can do: 300-348 MHZ, 387-464MHZ and 779-928MHZ default = 433.92
 * Connect USB-C cable to TTGO
 * Build and upload
 
