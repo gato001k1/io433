@@ -18,6 +18,7 @@ def plot_data(data):
 def read_serial_data():
     while True:
         try:
+            # change the COM PORT :)
             ser = serial.Serial('COM10', 1000000, timeout=1)
             print("Serial Port Checked")
             time.sleep(5)  # Wait for 5 seconds to receive all data
