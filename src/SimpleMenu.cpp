@@ -21,6 +21,14 @@ SimpleMenu::SimpleMenu(char* value, SimpleMenu *par, Callback action) {
   par->addChild(this);
 }
 
+SimpleMenu::SimpleMenu(char* value, SimpleMenu *par, CallbackWithParam action, int intparam) {
+  name = value;  
+  parent = par;
+  param = intparam;
+  actionSelectWithParam = action;
+  par->addChild(this);
+}
+
 SimpleMenu::SimpleMenu(char* value, SimpleMenu *par, Callback action, Callback actionend) {
   name = value;  
   parent = par;
@@ -50,6 +58,10 @@ int SimpleMenu::getChildNum(){
 /////////////////////////////////////////////////////////////////  
 void SimpleMenu::setAction(Callback action){
   actionSelect = action;
+}
+
+void SimpleMenu::setActionWithParam(CallbackWithParam action){
+  actionSelectWithParam = action;
 }
 
 ////////////////////////////////////////////////////////////////
