@@ -3,13 +3,11 @@
 #include "Free_Fonts.h"
 #include <TFT_eSPI.h> 
 
-#define IO433VERSION "v0.5"
+#define IO433VERSION "v0.2"
 #define BUTTON_UP  39
 #define BUTTON_DOWN  37
 #define LONGCLICK_MS 300
 #define DOUBLECLICK_MS 300
-
-#define GREEN 0x2C84
 
 #define WIDTH  240
 #define HEIGHT 135
@@ -75,7 +73,7 @@ void SMN_handler(Button2& btn) {
               if (clicked_menu->getChildNum() > 0) {
                 active_menu = clicked_menu;
               } else {
-                if (clicked_menu->actionSelect != NULL || clicked_menu->actionSelectWithParam != NULL) {
+                if (clicked_menu->actionSelect != NULL) {
                    needsRefresh = false;
                    needsExitFromAction = true;
                    tft.fillScreen(TFT_BLACK);
@@ -85,9 +83,9 @@ void SMN_handler(Button2& btn) {
                    SMN_printAt(clicked_menu->name, 20, 40); 
                    
                    if (clicked_menu->actionSelect != NULL) clicked_menu->actionSelect();
-                   if (clicked_menu->actionSelectWithParam != NULL) clicked_menu->actionSelectWithParam(clicked_menu->param);
                    if (clicked_menu->alertDone) SMN_alert(String(clicked_menu->name)+" done!",500,0);
                    lastClick = millis();
+                   
                  }
               }
            }
@@ -111,19 +109,41 @@ void SMN_handler(Button2& btn) {
 bool SMN_isAnyButtonPressed() {
   return (butUp.isPressedRaw() || butDown.isPressedRaw());
 }
-
 bool SMN_isUpButtonPressed() {
   return butUp.isPressedRaw();
 }
-
 bool SMN_isDownButtonPressed() {
   return butDown.isPressedRaw();
 }
 
-bool SMN_isUpButtonLongPressed() {
-  return butUp.getClickType() == LONG_CLICK;
+void SMN_screensaver() {
+  byte xx[24];
+  memset(xx,0,24*sizeof(byte));
+  byte col,i,x,y;
+  char c;
+  while(true) {
+    col = random(24);
+    for (i=0;i<=xx[col];i++) {
+      x = col*10;
+      y = i*12+1;
+      if ((i%2==0)^(col%2==0)) c = '1'; else c = '0';
+      tft.setFreeFont(FM9);
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      tft.drawChar(c, x, y, GFXFF);
+      delay(15);
+      tft.setTextColor(TFT_GREEN, TFT_BLACK);
+      tft.drawChar(c, x, y, GFXFF);
+      if (SMN_isAnyButtonPressed()) return;
+      lastClick = millis();
+    }
+    xx[col]++;
+    if (xx[col] > 11) xx[col] = 0;
+    tft.setFreeFont(FM12);
+    tft.setTextColor(TFT_MAROON, TFT_DARKGREY);
+    tft.drawString(IO433VERSION, 10, 110, GFXFF);
+    tft.drawString("@kripthor", 100, 110, GFXFF);
+  }
 }
-
 
 void SMN_initMenu(SimpleMenu *menu) {
   butUp.setLongClickTime(300);
@@ -149,9 +169,8 @@ void SMN_initMenu(SimpleMenu *menu) {
   SMN_printAt("|_ _/ _ \\| | |__ /__ /",0,26*2-16);
   SMN_printAt(" | | (_) |_  _|_ \\|_ \\",0,26*3-16);
   SMN_printAt("|___\\___/  |_|___/___/",0,26*4-16);
- SMN_printAt(" For M5stickC+2  v0.3",0,26*5-16);
-   delay(1000);
-  
+  SMN_printAt(" For M5stickC+2  v0.2",0,26*5-16);
+  delay(1000);                       
  
 }
 
@@ -212,38 +231,13 @@ void SMN_copy() {
   SMN_printAt("COPY...", 20, 30);   
 }
 
+
 void drawRightArrow(int x1,int y1,int x2,int y2,int color) {
   tft.drawLine(x1, y1, x2, y2, color);
   tft.drawLine(x2, y2, x2-5,y2-3, color);
   tft.drawLine(x2, y2, x2-5,y2+3, color);
   tft.drawLine(x2/2, y2, x2/2-5,y2-3, color);
   tft.drawLine(x2/2, y2, x2/2-5,y2+3, color);
-}
-
-void drawProgressBar(int x, int y, int width, int height, int progress, uint32_t color) {
-  tft.fillRect(x, y, width, height, TFT_LIGHTGREY);
-  int progressWidth = (width * progress) / 100;
-  tft.fillRect(x, y, progressWidth, height, color);
-}
-
-void drawSineWave() {
-    static int x = 50;
-    static int y = HEIGHT/2;
-
-    int amplitude = 20;
-    int frequency = 80;
-    int waveValue = amplitude * sin(x * 2 * PI / frequency);
-
-    tft.drawPixel(x, y + waveValue, TFT_WHITE);
-
-    x++;
-    if (x >= tft.width()) {
-      x = 0;
-      tft.fillScreen(TFT_BLACK);
-      tft.drawString(String(used_frequency) + " MHz", 20, 15, GFXFF);
-    }
-
-    delay(5);
 }
 
 void SMN_dump(uint16_t signal433[], int bufsize, int maxt) {
