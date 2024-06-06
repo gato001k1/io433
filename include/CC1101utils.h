@@ -26,13 +26,20 @@ void CCSetTx() {
   ELECHOUSE_cc1101.SetTx();
 }
 
+void CCSetMhz(float freq) {
+  ELECHOUSE_cc1101.setMHZ(freq);
+}
+
+void CCSetRxBW(int bandwidth) {
+  ELECHOUSE_cc1101.setRxBW(bandwidth);
+}
+
 void CCInit() {
 
   ELECHOUSE_cc1101.setSpiPin(CCSCK, CCMISO, CCMOSI, CCCSN);
   ELECHOUSE_cc1101.Init();                // must be set to initialize the cc1101!
   ELECHOUSE_cc1101.setGDO(CCGDO0, CCGDO2);
  // ELECHOUSE_cc1101.setPA(8);
-  ELECHOUSE_cc1101.setMHZ(433.92);        // Here you can set your basic frequency. 
                                           //The lib calculates the frequency automatically (default = 433.92).
                                           //The cc1101 can do: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
   ELECHOUSE_cc1101.setClb(1,13,15);
