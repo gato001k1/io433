@@ -8,6 +8,10 @@
 #include "esp_wifi.h"
 #include "driver/adc.h"
 #include "protocol.h"
+#ifdef CP1
+  #include "AXP192.h"
+  AXP192 axp192;
+#endif
 
 #define LOOPDELAY 20
 #define HIBERNATEMS 30*1000
@@ -452,9 +456,13 @@ void bruteforce(int protocolIndex) {
 }
 
 void setup() {
-  //prevuent StickCP2 to turn off when take the USB cable off
+  //prevent StickCP2 to turn off when take the USB cable off
+  #ifndef CP1
   pinMode(4,OUTPUT);
   digitalWrite(4,HIGH);
+  #else
+  axp192.begin();
+  #endif
   // Sets G36 to FLOATING mode to use G25 as GPIO
   gpio_pulldown_dis(GPIO_NUM_36);
   gpio_pullup_dis(GPIO_NUM_36);
