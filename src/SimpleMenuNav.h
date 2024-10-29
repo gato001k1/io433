@@ -4,15 +4,18 @@
 #include <TFT_eSPI.h> 
 
 #define IO433VERSION "v0.5"
-#define BUTTON_UP  39
-#define BUTTON_DOWN  37
+#if !defined(BUTTON_UP) || !defined(BUTTON_DOWN)
+  #define BUTTON_UP  0    // define your btn here
+  #define BUTTON_DOWN  1
+#endif
+
 #define LONGCLICK_MS 300
 #define DOUBLECLICK_MS 300
 
 #define GREEN 0x2C84
 
-#define WIDTH  240
-#define HEIGHT 135
+#define WIDTH  TFT_HEIGHT
+#define HEIGHT TFT_WIDTH
 
 Button2 butUp = Button2(BUTTON_UP);
 Button2 butDown = Button2(BUTTON_DOWN);
@@ -141,16 +144,20 @@ void SMN_initMenu(SimpleMenu *menu) {
   active_menu = menu;
 
   tft.init();
-  tft.setRotation(1);
+  tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_RED, TFT_BLACK);
   tft.setFreeFont(FMB9);
-  SMN_printAt(" ___ ___  _ _ ________",0,26-16);
-  SMN_printAt("|_ _/ _ \\| | |__ /__ /",0,26*2-16);
+  SMN_printAt(" ___ ___  _ _ ________  ",0,26-16);
+  SMN_printAt("|_ _/ _ \\| | |__ /__ / ",0,26*2-16);
   SMN_printAt(" | | (_) |_  _|_ \\|_ \\",0,26*3-16);
-  SMN_printAt("|___\\___/  |_|___/___/",0,26*4-16);
- SMN_printAt(" For M5stickC+2  v0.3",0,26*5-16);
-   delay(1000);
+  SMN_printAt("|___\\___/  |_|___/___/ ",0,26*4-16);
+  #if defined(EMBED)
+  SMN_printAt("For  T-Embed  v0.3",0,26*5-16);
+  #else
+  SMN_printAt("For M5stickC+2  v0.3",0,26*5-16);
+  #endif
+  delay(1000);
   
  
 }
