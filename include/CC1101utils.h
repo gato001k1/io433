@@ -37,25 +37,25 @@ void CCSetMhz(float freq) {
     {
         digitalWrite(BOARD_LORA_SW1, HIGH);
         digitalWrite(BOARD_LORA_SW0, LOW);
-        Serial.println("315Mhz");
+        //Serial.println("315Mhz");
     }
     else if (freq - 434 < 0.1)
     {
         digitalWrite(BOARD_LORA_SW1, HIGH);
         digitalWrite(BOARD_LORA_SW0, HIGH);
-        Serial.println("434Mhz");
+        //Serial.println("434Mhz");
     }
     else if (freq - 868 < 0.1)
     {
         digitalWrite(BOARD_LORA_SW1, LOW);
         digitalWrite(BOARD_LORA_SW0, HIGH);
-        Serial.println("868Mhz");
+        //Serial.println("868Mhz");
     }
     else if (freq - 915 < 0.1)
     {
         digitalWrite(BOARD_LORA_SW1, LOW);
         digitalWrite(BOARD_LORA_SW0, HIGH);
-        Serial.println("915Mhz");
+        //Serial.println("915Mhz");
     }
 
 #endif

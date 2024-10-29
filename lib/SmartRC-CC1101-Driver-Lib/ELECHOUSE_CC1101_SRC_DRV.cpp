@@ -103,8 +103,9 @@ void ELECHOUSE_CC1101::SpiStart(void)
 void ELECHOUSE_CC1101::SpiEnd(void)
 {
   // disable SPI
-  cc_spi->endTransaction();
   digitalWrite(SS_PIN, HIGH);
+  cc_spi->endTransaction();
+  
 }
 /****************************************************************
 *FUNCTION NAME: GDO_Set()

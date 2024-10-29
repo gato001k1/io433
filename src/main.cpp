@@ -28,6 +28,14 @@
 #define DUMP_RAW_MBPS 0.1 // as percentage of 1Mbps, us precision. (100kbps) This is mainly to dump and analyse in, ex, PulseView
 #define BOUND_SAMPLES false
 
+#if TFT_MOSI==CCMOSI
+#define RELEASE_CC1101 tft.drawPixel(0,0,0);  // If sharing TFT SPI Bus, need to call the tft SPI to release CC1101 to work (GDO0), because it is kept sleeping somehow
+                                              // don´t know yet how to deal with it, just using this method to print a black pixel at (0,0).
+#else
+#define RELEASE_CC1101
+
+#endif
+
 uint16_t signal433_store[MAXSIGS][BUFSIZE];
 uint16_t *signal433_current = signal433_store[0];
 // change here the frequencies you want to use
@@ -104,8 +112,7 @@ void copy() {
   CCSetMhz(used_frequency);
   CCSetRxBW(used_bandwidth);
   CCSetRx();
-  tft.drawPixel(0,0,0); // If sharing TFT SPI Bus, need to call the tft SPI to release CC1101 to work (GDO0), because it is kept sleeping somehow
-                        // don´t know yet how to deal with it, just using this method to print a black pixel at (0,0).
+  RELEASE_CC1101
   delay(50);
   //FILTER OUT NOISE SIGNALS (too few transistions or too fast)
   while (transitions < MINIMUM_TRANSITIONS && lastCopyTime < MINIMUM_COPYTIME_US) {
@@ -160,6 +167,8 @@ void replay () {
 }
 
 void dump () {
+  Serial.begin(115200);
+  delay(100);
   long ttime = 0;
   int trans = 0;
   int i,j;
@@ -183,6 +192,7 @@ void dump () {
   Serial.print("Dump raw (");
   Serial.print(DUMP_RAW_MBPS);
   Serial.println("Mbps):");
+  Serial.end();
 }
 
 // THIS IS OBVIOUSLY NOT REAL TIME
@@ -336,7 +346,9 @@ void freqenciesAnalyzer() {
   while (!endloop) {
     for (int i=0; i<totalFrequencies; i++) {
       CCSetMhz(frequencies[i]);
+      RELEASE_CC1101
       delay(20);
+      
       rssi = ELECHOUSE_cc1101.getRssi();
 
       Serial.print("freq: ");
@@ -487,7 +499,7 @@ void power_off() {
 
 
 void setup() {
-  Serial.begin(1000000);
+//Serial.begin(115200); // Activate only for debug
 // Power On setting for each device.
   #if defined(CP1)
   //prevent StickCP 1.1 to turn off when take the USB cable off
@@ -532,6 +544,19 @@ void setup() {
 
   #endif
 
+ // Start CC1101 module after TFT
+  #if defined(CP1) || defined(CP2)
+  // Sets G36 to FLOATING mode to use G25 as GPIO
+  gpio_pulldown_dis(GPIO_NUM_36);
+  gpio_pullup_dis(GPIO_NUM_36);
+  #elif defined(EMBED)
+  ELECHOUSE_cc1101.setSPIinstance(&tft.getSPIinstance());
+  #endif
+  ELECHOUSE_cc1101.setSpiPin(CCSCK, CCMISO, CCMOSI, CCCSN);
+  CCInit();
+  CCSetMhz(used_frequency);
+  CCSetRx();
+
 // Menu settings and tft init.
   SimpleMenu *menu_main = new SimpleMenu("Main");
   SimpleMenu *menu_replay = new SimpleMenu("Replay", menu_main, replay);
@@ -559,19 +584,6 @@ void setup() {
   menu_dump->alertDone = false;
   menu_monitor->alertDone = false;
   SMN_initMenu(menu_main);
-
- // Start CC1101 module after TFT
-  #if defined(CP1) || defined(CP2)
-  // Sets G36 to FLOATING mode to use G25 as GPIO
-  gpio_pulldown_dis(GPIO_NUM_36);
-  gpio_pullup_dis(GPIO_NUM_36);
-  #elif defined(EMBED)
-  ELECHOUSE_cc1101.setSPIinstance(&tft.getSPIinstance());
-  #endif
-  ELECHOUSE_cc1101.setSpiPin(CCSCK, CCMISO, CCMOSI, CCCSN);
-  CCInit();
-  CCSetMhz(used_frequency);
-  CCSetRx();
 
 //// ENSURE RADIO OFF (FOR LESS INTERFERENCE?)
   esp_bluedroid_disable();
