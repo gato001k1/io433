@@ -11,6 +11,9 @@
 #ifdef CP1
   #include "AXP192.h"
   AXP192 axp192;
+#elif defined(EMBED)
+  #include <XPowersLib.h>
+  XPowersPPM PPM;
 #endif
 
 #define LOOPDELAY 20
@@ -24,6 +27,14 @@
 #define MINIMUM_COPYTIME_US 16000
 #define DUMP_RAW_MBPS 0.1 // as percentage of 1Mbps, us precision. (100kbps) This is mainly to dump and analyse in, ex, PulseView
 #define BOUND_SAMPLES false
+
+#if TFT_MOSI==CCMOSI
+#define RELEASE_CC1101 tft.drawPixel(0,0,0);  // If sharing TFT SPI Bus, need to call the tft SPI to release CC1101 to work (GDO0), because it is kept sleeping somehow
+                                              // don´t know yet how to deal with it, just using this method to print a black pixel at (0,0).
+#else
+#define RELEASE_CC1101
+
+#endif
 
 uint16_t signal433_store[MAXSIGS][BUFSIZE];
 uint16_t *signal433_current = signal433_store[0];
@@ -52,8 +63,10 @@ int trycopy() {
     dif = 0;
     //WAIT FOR INIT
     while (dif < RESET443) {
+      uint8_t m = CCAvgRead();
       dif = esp_timer_get_time() - startread;
-      if (CCAvgRead() != n) {
+      if (m != n) {
+        Serial.print(".");
         break;
       }
     }
@@ -99,10 +112,12 @@ void copy() {
   CCSetMhz(used_frequency);
   CCSetRxBW(used_bandwidth);
   CCSetRx();
+  RELEASE_CC1101
   delay(50);
   //FILTER OUT NOISE SIGNALS (too few transistions or too fast)
   while (transitions < MINIMUM_TRANSITIONS && lastCopyTime < MINIMUM_COPYTIME_US) {
     transitions = trycopy();
+    Serial.println(transitions);
     if (SMN_isUpButtonPressed()) return;
   }
   //CLEAN LAST ELEMENTS
@@ -152,6 +167,8 @@ void replay () {
 }
 
 void dump () {
+  Serial.begin(115200);
+  delay(100);
   long ttime = 0;
   int trans = 0;
   int i,j;
@@ -175,6 +192,7 @@ void dump () {
   Serial.print("Dump raw (");
   Serial.print(DUMP_RAW_MBPS);
   Serial.println("Mbps):");
+  Serial.end();
 }
 
 // THIS IS OBVIOUSLY NOT REAL TIME
@@ -328,7 +346,9 @@ void freqenciesAnalyzer() {
   while (!endloop) {
     for (int i=0; i<totalFrequencies; i++) {
       CCSetMhz(frequencies[i]);
+      RELEASE_CC1101
       delay(20);
+      
       rssi = ELECHOUSE_cc1101.getRssi();
 
       Serial.print("freq: ");
@@ -455,22 +475,89 @@ void bruteforce(int protocolIndex) {
   }
 }
 
-void setup() {
-  //prevent StickCP2 to turn off when take the USB cable off
-  #ifndef CP1
-  pinMode(4,OUTPUT);
-  digitalWrite(4,HIGH);
+void power_off() {
+  #if defined(CP1)
+  axp192.PowerOff();
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_37,LOW); 
+  esp_deep_sleep_start();
+
+  #elif defined(CP2)
+  digitalWrite(4,LOW);
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_37,LOW); 
+  esp_deep_sleep_start();
+
+  #elif defined(EMBED)
+  digitalWrite(15,LOW); 
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_6,LOW); 
+  esp_deep_sleep_start();
+
   #else
-  axp192.begin();
+  Serial.println("Not Implemented");
   #endif
+}
+
+
+
+void setup() {
+//Serial.begin(115200); // Activate only for debug
+// Power On setting for each device.
+  #if defined(CP1)
+  //prevent StickCP 1.1 to turn off when take the USB cable off
+  axp192.begin();
+  #elif defined(CP2)
+  //prevent StickCP2 to turn off when take the USB cable off
+  pinMode(4,OUTPUT);
+  digitalWrite(4,HIGH);  
+  #elif defined(EMBED)
+  // Antenna pin mode
+  pinMode(BOARD_LORA_SW1, OUTPUT);
+  pinMode(BOARD_LORA_SW0, OUTPUT);
+  // backlight
+  pinMode(TFT_BL,OUTPUT);
+  digitalWrite(TFT_BL,HIGH);
+  // power pin
+  pinMode(15,OUTPUT);
+  digitalWrite(15,HIGH);
+  // CD SD pin high
+  pinMode(13,OUTPUT);
+  digitalWrite(13,HIGH);
+
+  // --------- IIC Power chip Management ---------
+  #define BOARD_I2C_SDA  8
+  #define BOARD_I2C_SCL  18
+  Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
+  bool pmu_ret = false;
+  pmu_ret = PPM.init(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, BQ25896_SLAVE_ADDRESS);
+    if(pmu_ret) {
+        PPM.setSysPowerDownVoltage(3300);
+        PPM.setInputCurrentLimit(3250);
+        Serial.printf("getInputCurrentLimit: %d mA\n",PPM.getInputCurrentLimit());
+        PPM.disableCurrentLimitPin();
+        PPM.setChargeTargetVoltage(4208);
+        PPM.setPrechargeCurr(64);
+        PPM.setChargerConstantCurr(832);
+        PPM.getChargerConstantCurr();
+        Serial.printf("getChargerConstantCurr: %d mA\n",PPM.getChargerConstantCurr());
+        PPM.enableADCMeasure();
+        PPM.enableCharge();
+    }  
+
+  #endif
+
+ // Start CC1101 module after TFT
+  #if defined(CP1) || defined(CP2)
   // Sets G36 to FLOATING mode to use G25 as GPIO
   gpio_pulldown_dis(GPIO_NUM_36);
   gpio_pullup_dis(GPIO_NUM_36);
+  #elif defined(EMBED)
+  ELECHOUSE_cc1101.setSPIinstance(&tft.getSPIinstance());
+  #endif
+  ELECHOUSE_cc1101.setSpiPin(CCSCK, CCMISO, CCMOSI, CCCSN);
   CCInit();
   CCSetMhz(used_frequency);
   CCSetRx();
-  Serial.begin(1000000);
 
+// Menu settings and tft init.
   SimpleMenu *menu_main = new SimpleMenu("Main");
   SimpleMenu *menu_replay = new SimpleMenu("Replay", menu_main, replay);
   SimpleMenu *menu_copy = new SimpleMenu("Copy", menu_main, copy);
@@ -485,6 +572,7 @@ void setup() {
   SimpleMenu *menu_jammer = new SimpleMenu("Jammer", menu_extra, jammer);
   SimpleMenu *menu_bruteforce = new SimpleMenu("Bruteforce", menu_extra, NULL);
   SimpleMenu *menu_tesla = new SimpleMenu("Tesla", menu_extra, sendTeslaSignal);
+  SimpleMenu *menu_poweroff = new SimpleMenu("Power Off", menu_extra, power_off);
 
   SimpleMenu *came_bruteforce = new SimpleMenu("Came 12bit", menu_bruteforce, bruteforce, CAME);
   SimpleMenu *nice_bruteforce = new SimpleMenu("Nice 12bit", menu_bruteforce, bruteforce, NICE);
@@ -496,12 +584,11 @@ void setup() {
   menu_dump->alertDone = false;
   menu_monitor->alertDone = false;
   SMN_initMenu(menu_main);
- 
-  //// ENSURE RADIO OFF (FOR LESS INTERFERENCE?)
+
+//// ENSURE RADIO OFF (FOR LESS INTERFERENCE?)
   esp_bluedroid_disable();
   esp_bt_controller_disable();
   esp_wifi_stop();
-  //adc_power_off();
 
   if(!SPIFFS.begin(FORMAT_SPIFFS_IF_FAILED)){
     Serial.println("SPIFFS Mount Failed");
@@ -518,9 +605,6 @@ void setup() {
   }
   
 
-  //NEED TO DOUBLE CHECK THIS MATH
-  String vbat = String((float)( analogRead(34) / 4095.0 * 2 * 3.3 * 1.1));
-  SMN_alert("Bat = \n"+vbat+"v",100,1500);
 }
 
 
@@ -533,15 +617,4 @@ void loop() {
   readFrequency(freqname);
   readBandwidth("/bandwidth.txt");
 
- // if (SMN_idleMS() > HIBERNATEMS) {
-   // SMN_alert("SLEEPING...",100,3000);
-   // esp_sleep_enable_ext0_wakeup(GPIO_NUM_0,0);
-    
-   // esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
-    //esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_AUTO);
-    //esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_AUTO);
-    //esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_AUTO);
-    //ELECHOUSE_cc1101.goSleep();
-    //esp_deep_sleep_start();
- // }
 }

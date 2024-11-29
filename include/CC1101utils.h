@@ -1,7 +1,7 @@
 #include <ELECHOUSE_CC1101_SRC_DRV.h>
 
 //#define TICC1101
-#define E07M1101D
+//#define E07M1101D
 
 #ifdef E07M1101D
  #define CCGDO0 25
@@ -27,6 +27,40 @@ void CCSetTx() {
 }
 
 void CCSetMhz(float freq) {
+#if defined(EMBED)
+    #define BOARD_LORA_SW1  47
+    #define BOARD_LORA_SW0  48
+    // SW1:1  SW0:0 --- 315MHz
+    // SW1:0  SW0:1 --- 868/915MHz
+    // SW1:1  SW0:1 --- 434MHz
+    if (freq - 315 < 0.1)
+    {
+        digitalWrite(BOARD_LORA_SW1, HIGH);
+        digitalWrite(BOARD_LORA_SW0, LOW);
+        //Serial.println("315Mhz");
+    }
+    else if (freq - 434 < 0.1)
+    {
+        digitalWrite(BOARD_LORA_SW1, HIGH);
+        digitalWrite(BOARD_LORA_SW0, HIGH);
+        //Serial.println("434Mhz");
+    }
+    else if (freq - 868 < 0.1)
+    {
+        digitalWrite(BOARD_LORA_SW1, LOW);
+        digitalWrite(BOARD_LORA_SW0, HIGH);
+        //Serial.println("868Mhz");
+    }
+    else if (freq - 915 < 0.1)
+    {
+        digitalWrite(BOARD_LORA_SW1, LOW);
+        digitalWrite(BOARD_LORA_SW0, HIGH);
+        //Serial.println("915Mhz");
+    }
+
+#endif
+
+
   ELECHOUSE_cc1101.setMHZ(freq);
 }
 
@@ -36,9 +70,9 @@ void CCSetRxBW(int bandwidth) {
 
 void CCInit() {
 
-  ELECHOUSE_cc1101.setSpiPin(CCSCK, CCMISO, CCMOSI, CCCSN);
   ELECHOUSE_cc1101.Init();                // must be set to initialize the cc1101!
   ELECHOUSE_cc1101.setGDO(CCGDO0, CCGDO2);
+  ELECHOUSE_cc1101.getCC1101();
  // ELECHOUSE_cc1101.setPA(8);
                                           //The lib calculates the frequency automatically (default = 433.92).
                                           //The cc1101 can do: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
